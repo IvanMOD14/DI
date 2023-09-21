@@ -1,34 +1,78 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+[RequireComponent(typeof(Rigidbody))]
 
 public class CharacterController : MonoBehaviour
 {
 
-    public float speed = 10.0f;
-    private float translation;
-    private float straffe;
+    public float Speed = 10f;
+    public float JumpForce = 300f;
 
-    // Use this for initialization
+    //что бы эта переменна€ работала добавьте тэг "Ground" на вашу поверхность земли
+    private bool _isGrounded;
+    private Rigidbody _rb;
+    // Start is called before the first frame update
     void Start()
     {
-        // turn off the cursor
-        Cursor.lockState = CursorLockMode.Locked;
+        _rb = GetComponent<Rigidbody>();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        // Input.GetAxis() is used to get the user's input
-        // You can furthor set it on Unity. (Edit, Project Settings, Input)
-        translation = Input.GetAxis("Vertical") * speed * Time.deltaTime;
-        straffe = Input.GetAxis("Horizontal") * speed * Time.deltaTime;
-        transform.Translate(straffe, 0, translation);
 
-        if (Input.GetKeyDown("escape"))
+    // обратите внимание что все действи€ с физикой
+    // необходимо обрабатывать в FixedUpdate, а не в Update
+    void FixedUpdate()
+    {
+        MovementLogic();
+        JumpLogic();
+    }
+
+    private void MovementLogic()
+    {
+        float moveHorizontal = Input.GetAxis("Horizontal");
+
+        float moveVertical = Input.GetAxis("Vertical");
+
+        Vector3 movement = new Vector3(moveHorizontal, 0.0f, moveVertical);
+
+        _rb.AddForce(movement * Speed);
+    }
+
+
+    private void JumpLogic()
+    {
+        if (Input.GetAxis("Jump") > 0)
         {
-            // turn on the cursor
-            Cursor.lockState = CursorLockMode.None;
+            if (_isGrounded)
+            {
+                _rb.AddForce(Vector3.up * JumpForce);
+
+                // ќбратите внимание что € делаю на основе Vector3.up
+                // а не на основе transform.up. ≈сли персонаж упал или
+                // если персонаж -- шар, то его личный "верх" может
+                // любое направление. ¬лево, вправо, вниз...
+                // Ќо нам нужен скачек только в абсолютный вверх,
+                // потому и Vector3.up
+            }
+        }
+    }
+
+
+    void OnCollisionEnter(Collision collision)
+    {
+        IsGroundedUpate(collision, true);
+    }
+
+    void OnCollisionExit(Collision collision)
+    {
+        IsGroundedUpate(collision, false);
+    }
+
+    private void IsGroundedUpate(Collision collision, bool value)
+    {
+        if (collision.gameObject.tag == ("Ground"))
+        {
+            _isGrounded = value;
         }
     }
 }
